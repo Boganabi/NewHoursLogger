@@ -9,14 +9,28 @@
     <Grid>
         <TextBlock HorizontalAlignment="Center" Margin="0,34,0,0" TextWrapping="Wrap" Text="Enter each item in the boxes below, then click Run." VerticalAlignment="Top"/>
         <Button Content="Run" HorizontalAlignment="Center" Margin="0,357,0,0" VerticalAlignment="Top" Click="Button_Click"/>
-        <TextBox HorizontalAlignment="Left" Margin="185,73,0,0" TextWrapping="Wrap" Text="Employee ID" VerticalAlignment="Top" Width="167" Name="EmployeeID"/>
+        <TextBox HorizontalAlignment="Left" Margin="185,73,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="167" Name="EmployeeID"/>
         <TextBlock HorizontalAlignment="Center" Margin="0,315,0,0" TextWrapping="Wrap" Text="Firefox support will be added in the future" VerticalAlignment="Top" Name="Result"/>
-        <TextBox HorizontalAlignment="Left" Margin="185,113,0,0" TextWrapping="Wrap" Text="Adobe Sign Email" VerticalAlignment="Top" Width="167" Name="ASEmail"/>
+        <TextBox HorizontalAlignment="Left" Margin="185,113,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="167" Name="ASEmail"/>
         <TextBlock HorizontalAlignment="Left" Margin="382,115,0,0" TextWrapping="Wrap" Text="Omit the '@coyote.csusb.edu' here, it is not needed" VerticalAlignment="Top"/>
-        <TextBox HorizontalAlignment="Left" Margin="185,156,0,0" TextWrapping="Wrap" Text="Student ID" VerticalAlignment="Top" Width="167" Name="StuEmail"/>
-        <TextBox HorizontalAlignment="Left" Margin="185,196,0,0" TextWrapping="Wrap" Text="Current unit enrollment" VerticalAlignment="Top" Width="167" Name="Units"/>
+        <TextBox HorizontalAlignment="Left" Margin="185,156,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="167" Name="StuEmail"/>
+        <TextBox HorizontalAlignment="Left" Margin="185,196,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="167" Name="Units"/>
         <DatePicker Name="StartDate" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="185,240,0,0" />
         <DatePicker Name="EndDate" HorizontalAlignment="Left" Margin="185,287,0,0" VerticalAlignment="Top"/>
+        <TextBlock HorizontalAlignment="Left" Margin="187,55,0,0" TextWrapping="Wrap" Text="Employee ID" VerticalAlignment="Top"/>
+        <TextBlock HorizontalAlignment="Left" Margin="187,95,0,0" TextWrapping="Wrap" Text="Adobe Sign Email" VerticalAlignment="Top"/>
+        <TextBlock HorizontalAlignment="Left" Margin="187,140,0,0" TextWrapping="Wrap" Text="Student ID" VerticalAlignment="Top"/>
+        <TextBlock HorizontalAlignment="Left" Margin="187,180,0,0" TextWrapping="Wrap" Text="Current Unit Enrollment" VerticalAlignment="Top"/>
+        <TextBlock HorizontalAlignment="Left" Margin="187,221,0,0" TextWrapping="Wrap" Text="Start Date" VerticalAlignment="Top"/>
+        <TextBlock HorizontalAlignment="Left" Margin="185,269,0,0" TextWrapping="Wrap" Text="End Date" VerticalAlignment="Top"/>
+        <TextBlock HorizontalAlignment="Left" Margin="400,140,0,0" TextWrapping="Wrap" Text="Reviewer Email" VerticalAlignment="Top"/>
+        <TextBox HorizontalAlignment="Left" Margin="400,156,0,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Width="255" Name="Reviewer"/>
+        <TextBlock HorizontalAlignment="Left" Margin="400,179,0,0" TextWrapping="Wrap" Text="Supervisor Email" VerticalAlignment="Top"/>
+        <TextBox HorizontalAlignment="Left" Margin="400,196,0,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Width="255" Name="Supervisor"/>
+        <TextBlock HorizontalAlignment="Left" Margin="400,224,0,0" TextWrapping="Wrap" Text="Admin Email" VerticalAlignment="Top"/>
+        <TextBox HorizontalAlignment="Left" Margin="400,240,0,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Width="255" Name="Admin"/>
+        <TextBlock HorizontalAlignment="Left" Margin="400,269,0,0" TextWrapping="Wrap" Text="CC Email" VerticalAlignment="Top"/>
+        <TextBox HorizontalAlignment="Left" Margin="400,287,0,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Width="255" Name="CC"/>
 
     </Grid>
 </Window>

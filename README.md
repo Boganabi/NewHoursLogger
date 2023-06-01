@@ -6,6 +6,8 @@ Now with improved UI!
 
 # How to use
 1. Download the repository to your computer (in the top right, the green button has a download zip option)
+2. Make sure Chrome is up to date
+- Top right 3 dots -> settings -> system -> automatically updates after relaunch
 2. Unzip the folder (right click -> extract all)
 3. Navigate to Release/net6.0-windows/
 4. Double-click the NewHoursLogger.exe

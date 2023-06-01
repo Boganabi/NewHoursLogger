@@ -23,6 +23,7 @@ using System.Windows.Shapes;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.Firefox;
+using OpenQA.Selenium.Interactions;
 using OpenQA.Selenium.Support.UI;
 using WebDriverManager;
 //using SeleniumExtras.WaitHelpers;
@@ -42,7 +43,7 @@ using WebDriverManager.DriverConfigs.Impl;
 
 namespace NewHoursLogger
 {
-
+    /*
     // class for handling dates in the timesheet
     // object represents what will be put on the timesheet
     public class TimeSheetDate
@@ -101,6 +102,11 @@ namespace NewHoursLogger
         }
         private string getMilitaryTime(string time)
         {
+            // make sure that time passed in isnt the clocked in string
+            if(time == "")
+            {
+                return "";
+            }
             // separate time into hh:mm and am/pm
             string hour = "";
             int ind = time.Length - 2;
@@ -142,7 +148,7 @@ namespace NewHoursLogger
             System.Diagnostics.Debug.WriteLine("");
         }
     }
-
+    */
 
     /// <summary>
     /// Interaction logic for MainWindow.xaml
@@ -158,10 +164,14 @@ namespace NewHoursLogger
         //private string eid = "7247156";
         //private string asemail = "logan.ashbaugh7156";
         //private string sid = "007247156";
-        //private string uni = "18";
-        //private DateTime begTimeSheet = new DateTime(2023, 3, 1);
-        //private DateTime endTimeSheet = new DateTime(2023, 3, 30);
+        //private string uni = "0";
+        //private DateTime begTimeSheet = new DateTime(2023, 5, 1);
+        //private DateTime endTimeSheet = new DateTime(2023, 5, 31);
         //private bool useFirefox = false;
+        //private string reviewer = "marcy.iniguez@csusb.edu";
+        //private string supervisor = "bobby.laudeman@csusb.edu";
+        //private string admin = "jamest@csusb.edu";
+        //private string cc = "ashleea.holloway@csusb.edu";
 
         private string eid = "";
         private string asemail = "";
@@ -170,6 +180,10 @@ namespace NewHoursLogger
         private DateTime begTimeSheet;
         private DateTime endTimeSheet;
         private bool useFirefox = false;
+        private string reviewer = "";
+        private string supervisor = "";
+        private string admin = "";
+        private string cc = "";
 
         private int checkDate(string dateRange)
         {
@@ -199,15 +213,17 @@ namespace NewHoursLogger
             }
         }
 
-        private void pageBack(WebDriverWait w)
+        private void pageBack(WebDriverWait w, IJavaScriptExecutor js)
         {
             IWebElement prevButton = w.Until(driver => driver.FindElement(By.Id("Previous")));
+            js.ExecuteScript("arguments[0].scrollIntoView(false);", prevButton);
             prevButton.Click();
         }
 
-        private void pageForward(WebDriverWait w)
+        private void pageForward(WebDriverWait w, IJavaScriptExecutor js)
         {
             IWebElement forwButton = w.Until(driver => driver.FindElement(By.Id("Next")));
+            js.ExecuteScript("arguments[0].scrollIntoView(false);", forwButton);
             forwButton.Click();
         }
 
@@ -298,9 +314,13 @@ namespace NewHoursLogger
             asemail = ASEmail.Text;
             sid = StuEmail.Text;
             uni = Units.Text;
+            reviewer = Reviewer.Text;
+            supervisor = Supervisor.Text;
+            admin = Admin.Text;
+            cc = CC.Text;
 
-            // process the entered dates and make datetimes out of them
-            begTimeSheet = StartDate.SelectedDate ?? DateTime.Now;
+        // process the entered dates and make datetimes out of them
+        begTimeSheet = StartDate.SelectedDate ?? DateTime.Now;
             endTimeSheet = EndDate.SelectedDate ?? DateTime.Now;
 
             // check for update and install if necessary
@@ -325,6 +345,9 @@ namespace NewHoursLogger
             driver = new ChromeDriver(dir);
 
             driver.Navigate().GoToUrl("https://61783.tcplusondemand.com/app/webclock/#/EmployeeLogOn/61783");
+
+            // init js executor to scroll to elements
+            IJavaScriptExecutor js = (IJavaScriptExecutor)driver;
 
             // wait for element to load
             WebDriverWait wait = new WebDriverWait(driver, TimeSpan.FromSeconds(5));
@@ -351,11 +374,11 @@ namespace NewHoursLogger
                 rangeNum = checkDate(dateRange);
                 if(rangeNum == -1)
                 {
-                    pageBack(wait);
+                    pageBack(wait, js);
                 }
                 if(rangeNum == 1)
                 {
-                    pageForward(wait);
+                    pageForward(wait, js);
                 }
             }
 
@@ -363,19 +386,98 @@ namespace NewHoursLogger
             // TimeSheetDate[] listOfDates = new TimeSheetDate[] { };
             List<TimeSheetDate> listOfDates = new List<TimeSheetDate>();
 
+            wait = new WebDriverWait(driver, TimeSpan.FromSeconds(5));
+
             bool bGatherDates = true;
             while(bGatherDates)
             {
                 System.Threading.Thread.Sleep(100); // sleep a little bit so that the right dates are gathered, otherwise we can have some issues in loop
                 ReadOnlyCollection<IWebElement> rows = wait.Until(driver => driver.FindElements(By.TagName("tr"))); // list of all timestamps
                 // since there are more than 1 tr elements we have to find the specific one we need
-                // 3 is the first tr element we need to scrape, and the last 12 are not needed
+                // 3 is the first tr element we need to scrape, and the last 11 or 12 are not needed
                 for(int i = 0; i < rows.Count; i++)
                 {
                     System.Threading.Thread.Sleep(100); // some elements not loaded without this
-                    if(i >= 3 && i < rows.Count - 12)
+
+                    if (i >= 3 && i < rows.Count - 12)
                     {
-                        ReadOnlyCollection<IWebElement> items = rows[i].FindElements(By.TagName("td")); // index 6 = timein, 7 = timeout, 8 = hours
+                        // for later: adding watermark to text box https://stackoverflow.com/questions/833943/watermark-hint-placeholder-text-in-textbox
+                        // this is a dumb solution im sorry lol
+
+                        ReadOnlyCollection<IWebElement> items;
+                        bool success = false;
+                        int attempts = 0;
+                        while(attempts < 5)
+                        {
+                            try
+                            {
+                                js.ExecuteScript("arguments[0].scrollIntoView(true);", rows[i]); // jic
+                                items = wait.Until((_) => rows[i].FindElements(By.TagName("td"))); // index 6 = timein, 7 = timeout, 8 = hours
+                                success = true;
+
+                                // need to make a check for when the weird hidden element is there or not, and if not then subtract index by 1
+                                int checkedIndex = 0;
+                                if (items[10].Text == "5 - ATI Student Assistant")
+                                {
+                                    checkedIndex = -1;
+                                }
+
+                                string dateToCheck = items[6 + checkedIndex].Text;
+                                if (isDateInRange(dateToCheck))
+                                {
+                                    // store this value in the list of timesheet objects
+                                    // first seperate the dates from the times
+                                    string[] dateIn = dateToCheck.Split(" "); // grab date from here and not from the time out, formatted mm/dd/yyyy hh:mm am/pm
+                                    string outtime = "";
+                                    if (items[7 + checkedIndex].Text != "<< Clocked In >>")
+                                    {
+                                        string[] dateOut = items[7 + checkedIndex].Text.Split(" ");
+                                        outtime = dateOut[1] + dateOut[2];
+                                    }
+                                    else
+                                    {
+                                        // no more times to scrape
+                                        bGatherDates = false;
+                                        // break;
+                                    }
+
+                                    // create object and add to list
+                                    listOfDates.Add(new TimeSheetDate(dateIn[0], dateIn[1] + dateIn[2], outtime, items[8 + checkedIndex].Text, i == rows.Count - 14));
+                                }
+                                else
+                                {
+                                    string secDate = wait.Until(driver => driver.FindElement(By.ClassName("PeriodTotal")).Text); // need top date range
+                                    if (checkSecondDate(secDate))
+                                    {
+                                        // if this is false then we are on the first page and should not break loop
+                                        // but if its true then we should break bc we are out of the range of dates we need to gather
+                                        // this should break the loop and start putting the dates in the timesheet
+                                        bGatherDates = false;
+                                        break;
+                                    }
+                                }
+
+                                break;
+                            }
+                            catch(Exception ex)
+                            {
+                                // there isnt anything we can do if we are here
+                            }
+                            attempts++;
+                        }
+
+                        if (!success)
+                        {
+                            Console.WriteLine("Elements were inaccessable. Aborting.");
+                            // System.Environment.Exit(0);
+                        }
+                        
+
+                        // this was the old solution, which crashes for reasons that i cannot fix with my current understanding\
+                        // the issue was that for some reason the td element would be stale, i.e. detached from the page, even with the implicit wait
+                        // may come back to this later, but for now the solution above works, despite its ugly nature
+                        /*
+                        ReadOnlyCollection<IWebElement> items = wait.Until((_) => rows[i].FindElements(By.TagName("td"))); // index 6 = timein, 7 = timeout, 8 = hours
 
                         // need to make a check for when the weird hidden element is there or not, and if not then subtract index by 1
                         int checkedIndex = 0;
@@ -385,7 +487,7 @@ namespace NewHoursLogger
                         }
 
                         string dateToCheck = items[6 + checkedIndex].Text;
-                        if(isDateInRange(dateToCheck))
+                        if (isDateInRange(dateToCheck))
                         {
                             // store this value in the list of timesheet objects
                             // first seperate the dates from the times
@@ -398,7 +500,7 @@ namespace NewHoursLogger
                         else
                         {
                             string secDate = wait.Until(driver => driver.FindElement(By.ClassName("PeriodTotal")).Text); // need top date range
-                            if(checkSecondDate(secDate))
+                            if (checkSecondDate(secDate))
                             {
                                 // if this is false then we are on the first page and should not break loop
                                 // but if its true then we should break bc we are out of the range of dates we need to gather
@@ -407,6 +509,7 @@ namespace NewHoursLogger
                                 break;
                             }
                         }
+                        */
                     }
                     else if (rows[i].Text == "No records found")
                     {
@@ -421,7 +524,7 @@ namespace NewHoursLogger
                         }
                     }
                 }
-                pageForward(wait);
+                pageForward(wait, js);
             }
 
             // since at this point, listOfDates has all the data we need, we can now start putting stuff in the timesheet
@@ -439,19 +542,19 @@ namespace NewHoursLogger
             wait = new WebDriverWait(driver, TimeSpan.FromSeconds(1000)); // the form takes a bit to load sometimes, and we need to wait for sign-in
             System.Threading.Thread.Sleep(100);
             IWebElement reviewerBox = wait.Until(driver => driver.FindElement(By.XPath("//*[@id=\"mainContent\"]/div[2]/div/div[4]/div[2]/div[2]/div/div[2]/div[3]/div/div/div[1]/textarea")));
-            reviewerBox.SendKeys("marcy.iniguez@csusb.edu"); // reviewer box
+            reviewerBox.SendKeys(reviewer); // reviewer box
 
             // supervisor box
             IWebElement supervisorBox = driver.FindElement(By.XPath("//*[@id=\"mainContent\"]/div[2]/div/div[4]/div[2]/div[3]/div/div[2]/div[3]/div/div/div[1]/textarea"));
-            supervisorBox.SendKeys("bobby.laudeman@csusb.edu");
+            supervisorBox.SendKeys(supervisor);
 
             // admin box
             IWebElement adminBox = driver.FindElement(By.XPath("//*[@id=\"mainContent\"]/div[2]/div/div[4]/div[2]/div[4]/div/div[2]/div[3]/div/div/div[1]/textarea"));
-            adminBox.SendKeys("jamest@csusb.edu");
+            adminBox.SendKeys(admin);
 
             // cc box
             IWebElement ccBox = driver.FindElement(By.XPath("//*[@id=\"mainContent\"]/div[2]/div/div[4]/div[4]/div/div/div[2]/div/div[1]/textarea"));
-            ccBox.SendKeys("ashleea.holloway@csusb.edu");
+            ccBox.SendKeys(cc);
 
             // need to scroll down to sign button
             IWebElement signButton = driver.FindElement(By.XPath("//*[@id=\"mainContent\"]/div[2]/div/div[6]/div/ul/li/button"));
@@ -561,4 +664,4 @@ namespace NewHoursLogger
 }
 
 
-// TODO: fix starting day and military time
+// TODO:
