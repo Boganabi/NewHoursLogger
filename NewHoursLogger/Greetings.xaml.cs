@@ -59,8 +59,8 @@ namespace NewHoursLogger
         //private string asemail = "logan.ashbaugh7156";
         //private string sid = "007247156";
         //private string uni = "0";
-        //private DateTime begTimeSheet = new DateTime(2023, 5, 1);
-        //private DateTime endTimeSheet = new DateTime(2023, 5, 31);
+        //private DateTime begTimeSheet = new DateTime(2023, 6, 1);
+        //private DateTime endTimeSheet = new DateTime(2023, 6, 29);
         //private bool useFirefox = false;
         //private string reviewer = "marcy.iniguez@csusb.edu";
         //private string supervisor = "bobby.laudeman@csusb.edu";
@@ -203,7 +203,7 @@ namespace NewHoursLogger
         {
 
             // get text from input boxes
-            // Result.Text = eid;
+
             eid = EmployeeID.Text;
             asemail = ASEmail.Text;
             sid = StuEmail.Text;
@@ -213,8 +213,8 @@ namespace NewHoursLogger
             admin = Admin.Text;
             cc = CC.Text;
 
-        // process the entered dates and make datetimes out of them
-        begTimeSheet = StartDate.SelectedDate ?? DateTime.Now;
+            // process the entered dates and make datetimes out of them
+            begTimeSheet = StartDate.SelectedDate ?? DateTime.Now;
             endTimeSheet = EndDate.SelectedDate ?? DateTime.Now;
 
             // check for update and install if necessary
@@ -285,11 +285,12 @@ namespace NewHoursLogger
             bool bGatherDates = true;
             while(bGatherDates)
             {
-                System.Threading.Thread.Sleep(100); // sleep a little bit so that the right dates are gathered, otherwise we can have some issues in loop
+                System.Threading.Thread.Sleep(200); // sleep a little bit so that the right dates are gathered, otherwise we can have some issues in loop
                 ReadOnlyCollection<IWebElement> rows = wait.Until(driver => driver.FindElements(By.TagName("tr"))); // list of all timestamps
+                
                 // since there are more than 1 tr elements we have to find the specific one we need
                 // 3 is the first tr element we need to scrape, and the last 11 or 12 are not needed
-                for(int i = 0; i < rows.Count; i++)
+                for (int i = 0; i < rows.Count; i++)
                 {
                     System.Threading.Thread.Sleep(100); // some elements not loaded without this
 
@@ -298,10 +299,11 @@ namespace NewHoursLogger
                         // for later: adding watermark to text box https://stackoverflow.com/questions/833943/watermark-hint-placeholder-text-in-textbox
                         // this is a dumb solution im sorry lol
 
+                        /*
                         ReadOnlyCollection<IWebElement> items;
                         bool success = false;
                         int attempts = 0;
-                        while(attempts < 5)
+                        while (attempts < 5)
                         {
                             try
                             {
@@ -319,6 +321,7 @@ namespace NewHoursLogger
                                 string dateToCheck = items[6 + checkedIndex].Text;
                                 if (isDateInRange(dateToCheck))
                                 {
+                                    System.Diagnostics.Debug.WriteLine("In range: " + dateToCheck);
                                     // store this value in the list of timesheet objects
                                     // first seperate the dates from the times
                                     string[] dateIn = dateToCheck.Split(" "); // grab date from here and not from the time out, formatted mm/dd/yyyy hh:mm am/pm
@@ -331,6 +334,7 @@ namespace NewHoursLogger
                                     else
                                     {
                                         // no more times to scrape
+                                        System.Diagnostics.Debug.WriteLine("found end of clock in times, exiting");
                                         bGatherDates = false;
                                         // break;
                                     }
@@ -340,12 +344,14 @@ namespace NewHoursLogger
                                 }
                                 else
                                 {
+                                    System.Diagnostics.Debug.WriteLine("Not in range");
                                     string secDate = wait.Until(driver => driver.FindElement(By.ClassName("PeriodTotal")).Text); // need top date range
                                     if (checkSecondDate(secDate))
                                     {
                                         // if this is false then we are on the first page and should not break loop
                                         // but if its true then we should break bc we are out of the range of dates we need to gather
                                         // this should break the loop and start putting the dates in the timesheet
+                                        System.Diagnostics.Debug.WriteLine("exit");
                                         bGatherDates = false;
                                         break;
                                     }
@@ -353,7 +359,7 @@ namespace NewHoursLogger
 
                                 break;
                             }
-                            catch(Exception ex)
+                            catch (Exception ex)
                             {
                                 // there isnt anything we can do if we are here
                             }
@@ -362,15 +368,15 @@ namespace NewHoursLogger
 
                         if (!success)
                         {
-                            Console.WriteLine("Elements were inaccessable. Aborting.");
+                            // System.Diagnostics.Debug.WriteLine("Elements were inaccessable. Aborting.");
                             // System.Environment.Exit(0);
                         }
-                        
+                        */
 
-                        // this was the old solution, which crashes for reasons that i cannot fix with my current understanding\
+                        // this was the old solution, which crashes for reasons that i cannot fix with my current understanding
                         // the issue was that for some reason the td element would be stale, i.e. detached from the page, even with the implicit wait
                         // may come back to this later, but for now the solution above works, despite its ugly nature
-                        /*
+
                         ReadOnlyCollection<IWebElement> items = wait.Until((_) => rows[i].FindElements(By.TagName("td"))); // index 6 = timein, 7 = timeout, 8 = hours
 
                         // need to make a check for when the weird hidden element is there or not, and if not then subtract index by 1
@@ -386,7 +392,21 @@ namespace NewHoursLogger
                             // store this value in the list of timesheet objects
                             // first seperate the dates from the times
                             string[] dateIn = dateToCheck.Split(" "); // grab date from here and not from the time out, formatted mm/dd/yyyy hh:mm am/pm
-                            string[] dateOut = items[7 + checkedIndex].Text.Split(" ");
+                            // string[] dateOut = items[7 + checkedIndex].Text.Split(" ");
+                            string[] dateOut;
+
+                            if (items[7 + checkedIndex].Text != "<< Clocked In >>")
+                            {
+                                dateOut = items[7 + checkedIndex].Text.Split(" ");
+                                // outtime = dateOut[1] + dateOut[2];
+                            }
+                            else
+                            {
+                                // no more times to scrape
+                                System.Diagnostics.Debug.WriteLine("found end of clock in times, exiting");
+                                bGatherDates = false;
+                                break;
+                            }
 
                             // create object and add to list
                             listOfDates.Add(new TimeSheetDate(dateIn[0], dateIn[1] + dateIn[2], dateOut[1] + dateOut[2], items[8 + checkedIndex].Text, i == rows.Count - 14));
@@ -403,11 +423,13 @@ namespace NewHoursLogger
                                 break;
                             }
                         }
-                        */
+                        
                     }
                     else if (rows[i].Text == "No records found")
                     {
+
                         string secDate = wait.Until(driver => driver.FindElement(By.ClassName("PeriodTotal")).Text); // need top date range
+
                         if (checkSecondDate(secDate))
                         {
                             // if this is false then we are on the first page and should not break loop
@@ -420,6 +442,15 @@ namespace NewHoursLogger
                 }
                 pageForward(wait, js);
             }
+
+            // print out all dates for debug purposes
+
+            /*
+            for(int i = 0; i < listOfDates.Count; i++)
+            {
+                listOfDates[i].printObj();
+            }
+            */
 
             // since at this point, listOfDates has all the data we need, we can now start putting stuff in the timesheet
             driver.Navigate().GoToUrl("https://csusbsign.na2.documents.adobe.com/account/customComposeJs?workflowid=CBJCHBCAABAAIfLxRZ7xj7zi7uLegFYwKypc4N7ZcGop");
