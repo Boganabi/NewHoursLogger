@@ -54,6 +54,8 @@ namespace NewHoursLogger
             InitializeComponent();
         }
 
+        private bool devMode = true;
+
         // testing values
         //private string eid = "7247156";
         //private string asemail = "logan.ashbaugh7156";
@@ -203,19 +205,34 @@ namespace NewHoursLogger
         {
 
             // get text from input boxes
+            if (devMode)
+            {
+                eid = "7247156";
+                asemail = "logan.ashbaugh7156";
+                sid = "007247156";
+                uni = "0";
+                begTimeSheet = new DateTime(2023, 7, 3);
+                endTimeSheet = new DateTime(2023, 7, 28);
+                reviewer = "marcy.iniguez@csusb.edu";
+                supervisor = "bobby.laudeman@csusb.edu";
+                admin = "jamest@csusb.edu";
+                cc = "ashleea.holloway@csusb.edu";
+            }
+            else
+            {
+                eid = EmployeeID.Text;
+                asemail = ASEmail.Text;
+                sid = StuEmail.Text;
+                uni = Units.Text;
+                reviewer = Reviewer.Text;
+                supervisor = Supervisor.Text;
+                admin = Admin.Text;
+                cc = CC.Text;
 
-            eid = EmployeeID.Text;
-            asemail = ASEmail.Text;
-            sid = StuEmail.Text;
-            uni = Units.Text;
-            reviewer = Reviewer.Text;
-            supervisor = Supervisor.Text;
-            admin = Admin.Text;
-            cc = CC.Text;
-
-            // process the entered dates and make datetimes out of them
-            begTimeSheet = StartDate.SelectedDate ?? DateTime.Now;
-            endTimeSheet = EndDate.SelectedDate ?? DateTime.Now;
+                // process the entered dates and make datetimes out of them
+                begTimeSheet = StartDate.SelectedDate ?? DateTime.Now;
+                endTimeSheet = EndDate.SelectedDate ?? DateTime.Now;
+            }
 
             // check for update and install if necessary
             IWebDriver driver;
@@ -298,132 +315,134 @@ namespace NewHoursLogger
                     {
                         // for later: adding watermark to text box https://stackoverflow.com/questions/833943/watermark-hint-placeholder-text-in-textbox
                         // this is a dumb solution im sorry lol
-
-                        /*
-                        ReadOnlyCollection<IWebElement> items;
-                        bool success = false;
-                        int attempts = 0;
-                        while (attempts < 5)
+                        bool weirdSolution = true;
+                        if (weirdSolution)
                         {
-                            try
+                            ReadOnlyCollection<IWebElement> items;
+                            bool success = false;
+                            int attempts = 0;
+                            while (attempts < 5)
                             {
-                                js.ExecuteScript("arguments[0].scrollIntoView(true);", rows[i]); // jic
-                                items = wait.Until((_) => rows[i].FindElements(By.TagName("td"))); // index 6 = timein, 7 = timeout, 8 = hours
-                                success = true;
-
-                                // need to make a check for when the weird hidden element is there or not, and if not then subtract index by 1
-                                int checkedIndex = 0;
-                                if (items[10].Text == "5 - ATI Student Assistant")
+                                try
                                 {
-                                    checkedIndex = -1;
-                                }
+                                    js.ExecuteScript("arguments[0].scrollIntoView(true);", rows[i]); // jic
+                                    items = wait.Until((_) => rows[i].FindElements(By.TagName("td"))); // index 6 = timein, 7 = timeout, 8 = hours
+                                    success = true;
 
-                                string dateToCheck = items[6 + checkedIndex].Text;
-                                if (isDateInRange(dateToCheck))
-                                {
-                                    System.Diagnostics.Debug.WriteLine("In range: " + dateToCheck);
-                                    // store this value in the list of timesheet objects
-                                    // first seperate the dates from the times
-                                    string[] dateIn = dateToCheck.Split(" "); // grab date from here and not from the time out, formatted mm/dd/yyyy hh:mm am/pm
-                                    string outtime = "";
-                                    if (items[7 + checkedIndex].Text != "<< Clocked In >>")
+                                    // need to make a check for when the weird hidden element is there or not, and if not then subtract index by 1
+                                    int checkedIndex = 0;
+                                    if (items[10].Text == "5 - ATI Student Assistant")
                                     {
-                                        string[] dateOut = items[7 + checkedIndex].Text.Split(" ");
-                                        outtime = dateOut[1] + dateOut[2];
+                                        checkedIndex = -1;
+                                    }
+
+                                    string dateToCheck = items[6 + checkedIndex].Text;
+                                    if (isDateInRange(dateToCheck))
+                                    {
+                                        System.Diagnostics.Debug.WriteLine("In range: " + dateToCheck);
+                                        // store this value in the list of timesheet objects
+                                        // first seperate the dates from the times
+                                        string[] dateIn = dateToCheck.Split(" "); // grab date from here and not from the time out, formatted mm/dd/yyyy hh:mm am/pm
+                                        string outtime = "";
+                                        if (items[7 + checkedIndex].Text != "<< Clocked In >>")
+                                        {
+                                            string[] dateOut = items[7 + checkedIndex].Text.Split(" ");
+                                            outtime = dateOut[1] + dateOut[2];
+                                        }
+                                        else
+                                        {
+                                            // no more times to scrape
+                                            System.Diagnostics.Debug.WriteLine("found end of clock in times, exiting");
+                                            bGatherDates = false;
+                                            // break;
+                                        }
+
+                                        // create object and add to list
+                                        listOfDates.Add(new TimeSheetDate(dateIn[0], dateIn[1] + dateIn[2], outtime, items[8 + checkedIndex].Text, i == rows.Count - 14));
                                     }
                                     else
                                     {
-                                        // no more times to scrape
-                                        System.Diagnostics.Debug.WriteLine("found end of clock in times, exiting");
-                                        bGatherDates = false;
-                                        // break;
+                                        System.Diagnostics.Debug.WriteLine("Not in range");
+                                        string secDate = wait.Until(driver => driver.FindElement(By.ClassName("PeriodTotal")).Text); // need top date range
+                                        if (checkSecondDate(secDate))
+                                        {
+                                            // if this is false then we are on the first page and should not break loop
+                                            // but if its true then we should break bc we are out of the range of dates we need to gather
+                                            // this should break the loop and start putting the dates in the timesheet
+                                            System.Diagnostics.Debug.WriteLine("exit");
+                                            bGatherDates = false;
+                                            break;
+                                        }
                                     }
 
-                                    // create object and add to list
-                                    listOfDates.Add(new TimeSheetDate(dateIn[0], dateIn[1] + dateIn[2], outtime, items[8 + checkedIndex].Text, i == rows.Count - 14));
+                                    break;
                                 }
-                                else
+                                catch (Exception ex)
                                 {
-                                    System.Diagnostics.Debug.WriteLine("Not in range");
-                                    string secDate = wait.Until(driver => driver.FindElement(By.ClassName("PeriodTotal")).Text); // need top date range
-                                    if (checkSecondDate(secDate))
-                                    {
-                                        // if this is false then we are on the first page and should not break loop
-                                        // but if its true then we should break bc we are out of the range of dates we need to gather
-                                        // this should break the loop and start putting the dates in the timesheet
-                                        System.Diagnostics.Debug.WriteLine("exit");
-                                        bGatherDates = false;
-                                        break;
-                                    }
+                                    // there isnt anything we can do if we are here
                                 }
-
-                                break;
+                                attempts++;
                             }
-                            catch (Exception ex)
+
+                            if (!success)
                             {
-                                // there isnt anything we can do if we are here
+                                // System.Diagnostics.Debug.WriteLine("Elements were inaccessable. Aborting.");
+                                // System.Environment.Exit(0);
                             }
-                            attempts++;
-                        }
-
-                        if (!success)
-                        {
-                            // System.Diagnostics.Debug.WriteLine("Elements were inaccessable. Aborting.");
-                            // System.Environment.Exit(0);
-                        }
-                        */
-
-                        // this was the old solution, which crashes for reasons that i cannot fix with my current understanding
-                        // the issue was that for some reason the td element would be stale, i.e. detached from the page, even with the implicit wait
-                        // may come back to this later, but for now the solution above works, despite its ugly nature
-
-                        ReadOnlyCollection<IWebElement> items = wait.Until((_) => rows[i].FindElements(By.TagName("td"))); // index 6 = timein, 7 = timeout, 8 = hours
-
-                        // need to make a check for when the weird hidden element is there or not, and if not then subtract index by 1
-                        int checkedIndex = 0;
-                        if (items[10].Text == "5 - ATI Student Assistant")
-                        {
-                            checkedIndex = -1;
-                        }
-
-                        string dateToCheck = items[6 + checkedIndex].Text;
-                        if (isDateInRange(dateToCheck))
-                        {
-                            // store this value in the list of timesheet objects
-                            // first seperate the dates from the times
-                            string[] dateIn = dateToCheck.Split(" "); // grab date from here and not from the time out, formatted mm/dd/yyyy hh:mm am/pm
-                            // string[] dateOut = items[7 + checkedIndex].Text.Split(" ");
-                            string[] dateOut;
-
-                            if (items[7 + checkedIndex].Text != "<< Clocked In >>")
-                            {
-                                dateOut = items[7 + checkedIndex].Text.Split(" ");
-                                // outtime = dateOut[1] + dateOut[2];
-                            }
-                            else
-                            {
-                                // no more times to scrape
-                                System.Diagnostics.Debug.WriteLine("found end of clock in times, exiting");
-                                bGatherDates = false;
-                                break;
-                            }
-
-                            // create object and add to list
-                            listOfDates.Add(new TimeSheetDate(dateIn[0], dateIn[1] + dateIn[2], dateOut[1] + dateOut[2], items[8 + checkedIndex].Text, i == rows.Count - 14));
                         }
                         else
                         {
-                            string secDate = wait.Until(driver => driver.FindElement(By.ClassName("PeriodTotal")).Text); // need top date range
-                            if (checkSecondDate(secDate))
+                            // this was the old solution, which crashes for reasons that i cannot fix with my current understanding
+                            // the issue was that for some reason the td element would be stale, i.e. detached from the page, even with the implicit wait
+                            // may come back to this later, but for now the solution above works, despite its ugly nature
+
+                            ReadOnlyCollection<IWebElement> items = wait.Until((_) => rows[i].FindElements(By.TagName("td"))); // index 6 = timein, 7 = timeout, 8 = hours
+
+                            // need to make a check for when the weird hidden element is there or not, and if not then subtract index by 1
+                            int checkedIndex = 0;
+                            if (10 < items.Count && items[10].Text == "5 - ATI Student Assistant")
                             {
-                                // if this is false then we are on the first page and should not break loop
-                                // but if its true then we should break bc we are out of the range of dates we need to gather
-                                // this should break the loop and start putting the dates in the timesheet
-                                bGatherDates = false;
-                                break;
+                                checkedIndex = -1;
+                            }
+
+                            string dateToCheck = items[6 + checkedIndex].Text;
+                            if (isDateInRange(dateToCheck))
+                            {
+                                // store this value in the list of timesheet objects
+                                // first seperate the dates from the times
+                                string[] dateIn = dateToCheck.Split(" "); // grab date from here and not from the time out, formatted mm/dd/yyyy hh:mm am/pm
+                                                                          // string[] dateOut = items[7 + checkedIndex].Text.Split(" ");
+                                string[] dateOut;
+
+                                if (items[7 + checkedIndex].Text != "<< Clocked In >>")
+                                {
+                                    dateOut = items[7 + checkedIndex].Text.Split(" ");
+                                    // outtime = dateOut[1] + dateOut[2];
+                                }
+                                else
+                                {
+                                    // no more times to scrape
+                                    System.Diagnostics.Debug.WriteLine("found end of clock in times, exiting");
+                                    bGatherDates = false;
+                                    break;
+                                }
+
+                                // create object and add to list
+                                listOfDates.Add(new TimeSheetDate(dateIn[0], dateIn[1] + dateIn[2], dateOut[1] + dateOut[2], items[8 + checkedIndex].Text, i == rows.Count - 14));
+                            }
+                            else
+                            {
+                                string secDate = wait.Until(driver => driver.FindElement(By.ClassName("PeriodTotal")).Text); // need top date range
+                                if (checkSecondDate(secDate))
+                                {
+                                    // if this is false then we are on the first page and should not break loop
+                                    // but if its true then we should break bc we are out of the range of dates we need to gather
+                                    // this should break the loop and start putting the dates in the timesheet
+                                    bGatherDates = false;
+                                    break;
+                                }
                             }
                         }
-                        
                     }
                     else if (rows[i].Text == "No records found")
                     {
